@@ -19,7 +19,7 @@ def get_sources():
     resp = requests.get(url, params=params)
     data = resp.json()
     sources = [src['id'].strip() for src in data['sources']]
-    print("Here are the sources:")
+    print("There are {} sources:", len(sources))
     print(sources)
     return sources
 
@@ -67,7 +67,12 @@ def tester():
         art_count += len(titles)
         word_count += count_word(WORD, titles)
 
-    print(WORD, "found {} times in {} articles".format(word_count, art_count))
+    print(WORD, "found {} times in {} articles in {} publications.".format(
+              word_count,
+              art_count,
+              len(sources)
+              )
+         )
     print("Process took {:.0f} seconds".format(time.time() - start))
 
 if __name__ == "__main__":

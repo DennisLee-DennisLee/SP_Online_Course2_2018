@@ -15,7 +15,7 @@ NEWS_API_KEY = "61c76c103ff8421ca7b0d3903f3b730d"
 BASE_URL = 'https://newsapi.org/v1/'
 ARTICLE_BASE_URL = BASE_URL  + "articles"
 WORD = 'trump'
-ART_COUNT_LIST, WORD_COUNT_LIST = [], []
+art_count_dict, word_count_dict = {}, {}
 
 def get_sources():
     """
@@ -28,7 +28,7 @@ def get_sources():
     resp = requests.get(url, params=params)
     data = resp.json()
     sources = [src['id'].strip() for src in data['sources']]
-    print("Here are the sources:")
+    print("There are {} sources:", len(sources))
     print(sources)
     return sources
 
@@ -55,7 +55,9 @@ def get_articles(source):
     return titles
 
 def count_word(word, titles):
-    """Count the number of occurrences of the word in the titles."""
+    """
+    Count the number of occurrences of the word in the titles/descriptions.
+    """
     word = word.lower()
     count = 0
     for title in titles:
@@ -63,32 +65,37 @@ def count_word(word, titles):
             count += 1
     return count
 
-def get_article_and_word_counts(source: str):
+def get_article_and_word_counts(source):
     """
-    Add the article count and word count for a source to the list of
-    article counts and the list of word counts.
+    Add the article count and word count for a source to the dict of
+    article counts and the dict of word counts.
     """
     titles = get_articles(source)
-    ART_COUNT_LIST.append(len(titles))
-    WORD_COUNT_LIST.append(count_word(WORD, titles))
+    art_count_dict[source] = len(titles)
+    word_count_dict[source] = count_word(WORD, titles)
 
 def tester():
     """Test the scraper and time it."""
     threads = []
+    lock = threading.Lock()
     start = time.time()
     sources = get_sources()
 
+    lock.acquire()
     for source in sources:
-        full_id = ''.join(source)
-        print("The ID is:", full_id)
         thread = threading.Thread(target=get_article_and_word_counts,
-                                  kwargs={"source": full_id})
+                                  kwargs={"source": source})
         thread.start()
         threads.append(thread)
+    lock.release()
 
     print(WORD,
-          "found {} times in {} articles".format(sum(WORD_COUNT_LIST),
-                                                 sum(ART_COUNT_LIST)))
+          "found {} times in {} articles out of {} publications.".format(
+              sum(word_count_dict.values()),
+              sum(art_count_dict.values()),
+              len(art_count_dict)
+          )
+         )
     print("Process took {:.0f} seconds".format(time.time() - start))
 
 if __name__ == "__main__":
